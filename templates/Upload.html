@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simon & Lysane</title>
+    <style>
+        @font-face {
+            font-family: "Savoye LET";
+            src: url("/assets/fonts/Savoye LET Plain1.0.woff2") format("woff2"), url("/assets/fonts/Savoye LET Plain1.0.woff") format("woff"), url("/assets/fonts/Savoye LET Plain1.0.ttf") format("truetype");
+            font-style: normal;
+            font-weight: 400;
+        }
+
+        @font-face {
+            font-family: "ITC Avant Garde Gothic Pro-XLt";
+            src: url("/assets/fonts/ITC_Avant_Garde_Gothic_Pro-XLt.woff2") format("woff2"), url("/assets/fonts/ITC_Avant_Garde_Gothic_Pro-XLt.woff") format("woff"), url("/assets/fonts/ITC_Avant_Garde_Gothic_Pro-XLt.otf") format("opentype");
+            font-style: normal;
+            font-weight: 400;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            background-color: rgb(242, 236, 229);
+            height: 100dvh;
+            width: 100dvw;
+            margin: 0px;
+        }
+
+        h1 {
+            font-family: 'Savoye LET';
+            text-align: center;
+            color: rgb(151, 107, 46);
+            font-size: 3.6rem;
+            margin: 1.6rem;
+            margin-bottom: 0rem;
+        }
+
+        form {
+            display: flex;
+            flex: 1;
+            min-height: 0px;
+            gap: 1.6rem;
+            flex-direction: column;
+            justify-content: space-between;
+            margin: 1.6rem;
+        }
+
+        label {
+            text-align: center;
+            color: rgb(159, 117, 66);
+            font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .custom-file-upload {
+            background-color: #e9e9ed;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgb(98, 36, 15);
+            padding: 6px 12px;
+            cursor: pointer;
+            height: 5.4rem;
+        }
+
+        button {
+            background-color: #e9e9ed;
+            height: 5.4rem;
+            color: rgb(159, 117, 66);
+            border: 1px solid rgb(98, 36, 15);
+            font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
+            cursor: pointer;
+        }
+
+        ul {
+            display: flex;
+            flex-direction: row;
+            list-style-type: none;
+            overflow: auto;
+            scroll-snap-type: x proximity;
+
+        }
+
+        li {
+            font-family: "ITC Avant Garde Gothic Pro-XLt";
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            scroll-snap-align: start;
+
+        }
+
+        video {
+            height: 50dvh;
+            width: auto;
+            object-fit: contain;
+        }
+
+        img {
+            height: 50dvh;
+            width: auto;
+            object-fit: contain;
+        }
+
+        object {
+            height: 50dvh;
+            width: auto;
+            object-fit: contain;
+        }
+
+        figcaption {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        const byteValueNumberFormatter = Intl.NumberFormat("en", {
+            notation: "compact",
+            style: "unit",
+            unit: "byte",
+            unitDisplay: "narrow",
+        });
+        function createElementByMimeAndUrl(mime, url) {
+            if (mime.toLowerCase().startsWith("image/")) {
+                const element = document.createElement('img');
+                element.src = url
+                return element;
+            } else if (mime.toLowerCase().startsWith("video/")) {
+                const element = document.createElement('video');
+                element.controls = true
+                element.src = url
+                return element
+            } else if (mime.toLowerCase().startsWith("audio/")) {
+                const element = document.createElement('audio');
+                element.src = url
+                element.controls = true
+                return element
+            } else {
+                const element = document.createElement('object');
+                element.data = url
+                return element
+            }
+        }
+        function createListItemElementFromFile(file) {
+            const li = document.createElement('li');
+            const figure = document.createElement('figure');
+            const figureCaption = document.createElement('figcaption');
+
+            const preview = createElementByMimeAndUrl(file.type, URL.createObjectURL(file));
+            figureCaption.appendChild(document.createTextNode(`${file.name} - ${byteValueNumberFormatter.format(file.size)}`));
+            figure.appendChild(preview)
+            figure.appendChild(figureCaption)
+            li.appendChild(figure)
+            return li
+
+        }
+        function onFileSelect(event) {
+            const fileList = document.getElementById("file-list");
+
+            [...event.target.files].map(createListItemElementFromFile).forEach(li => fileList.appendChild(li));
+        }
+        function onLoad() {
+            const fileInput = document.getElementById("file-input");
+            fileInput.addEventListener("change", onFileSelect);
+        }
+        window.addEventListener("load", onLoad)
+    </script>
+    <h1>Simon & Lysane</h1>
+    <form id="file_submit" action="/upload-multi" method="POST" enctype="multipart/form-data">
+        <label for="file-input" class="custom-file-upload">
+                    <input id="file-input" accept="image/*,video/*,audio/*" type="file" name="file" required="" multiple="">
+
+            1. Hier klicken um Bilder/Videos/Audios auszuwählen </label>
+        <ul id="file-list">
+        </ul>
+        <button type="submit">2. Hochladen</button>
+    </form>
+</body>
+
+</html>
