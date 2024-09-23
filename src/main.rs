@@ -116,6 +116,10 @@ async fn upload(mut multipart: Multipart) -> Redirect {
     }
     Redirect::to("/gallery")
 }
+
+#[derive(Template)]
+#[template(path = "Home.html")]
+struct Home {}
 #[derive(Template)]
 #[template(path = "Login.html")]
 struct LoginForm {}
@@ -180,6 +184,9 @@ async fn show_upload() -> UploadForm {
 async fn show_login() -> LoginForm {
     LoginForm {}
 }
+async fn show_home() -> Home {
+    Home {}
+}
 #[tokio::main]
 async fn main() {
     let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
@@ -196,7 +203,7 @@ async fn main() {
         .route("/gallery", get(show_gallery))
         .route("/zip", get(create_zip))
         .route("/upload", get(show_upload))
-        .route("/", get(show_upload))
+        .route("/", get(show_home))
         .route(
             "/upload-multi",
             post(upload).layer(DefaultBodyLimit::max(500 * 1024 * 1024)),
