@@ -32,50 +32,50 @@
 
         body {
             display: flex;
-            flex-direction: column;
             flex: 1;
-            background-color: rgb(242, 236, 229);
-            height: 100dvh;
+            flex-direction: column;
             width: 100dvw;
+            height: 100dvh;
             margin: 0px;
+            background-color: rgb(242, 236, 229);
         }
 
         h1 {
-            font-family: 'Savoye LET';
-            text-align: center;
-            color: rgb(151, 107, 46);
-            font-size: 3.6rem;
             margin: 1.6rem;
             margin-bottom: 0rem;
+            color: rgb(151, 107, 46);
+            font-family: 'Savoye LET';
+            font-size: 3.6rem;
+            text-align: center;
         }
 
 
         button {
-            background-color: #e9e9ed;
             height: 5.4rem;
-            color: rgb(159, 117, 66);
             border: 1px solid rgb(98, 36, 15);
+            background-color: #e9e9ed;
+            color: rgb(159, 117, 66);
             font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
             cursor: pointer;
         }
 
         ul {
-            list-style-type: none;
-            overflow: auto;
-            scroll-snap-type: y mandatory;
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 1.6rem;
+            overflow: auto;
             padding: 0rem;
             padding-bottom: 7.6rem;
+            list-style-type: none;
+            scroll-snap-type: y mandatory;
+            gap: 1.6rem;
         }
 
         li {
-            font-family: "ITC Avant Garde Gothic Pro-XLt";
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            font-family: "ITC Avant Garde Gothic Pro-XLt";
             scroll-snap-align: start;
 
         }
@@ -87,20 +87,20 @@
 
         @media (orientation: portrait) {
             video {
-                height: auto;
                 max-width: 46dvw;
+                height: auto;
                 object-fit: contain;
             }
 
             img {
-                height: auto;
                 max-width: 46dvw;
+                height: auto;
                 object-fit: contain;
             }
 
             object {
-                height: auto;
                 max-width: 46dvw;
+                height: auto;
                 object-fit: contain;
             }
 
@@ -129,30 +129,30 @@
 
 
         figcaption {
+            overflow: hidden;
             margin-top: 0.6rem;
             text-align: center;
             text-overflow: ellipsis;
             white-space: nowrap;
-            overflow: hidden;
         }
 
         a {
             position: fixed;
+            right: 0px;
             bottom: 0px;
             left: 0px;
-            right: 0px;
-            background-color: #e9e9ed;
-            height: 5.4rem;
-            color: rgb(159, 117, 66);
-            border: 1px solid rgb(98, 36, 15);
-            font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
-            margin: 1.6rem;
-
-            text-align: center;
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            height: 5.4rem;
+            border: 1px solid rgb(98, 36, 15);
+            margin: 1.6rem;
+            background-color: #e9e9ed;
+            color: rgb(159, 117, 66);
+            font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
+
+            text-align: center;
             text-decoration: none;
         }
     </style>
