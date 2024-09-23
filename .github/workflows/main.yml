@@ -25,6 +25,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - id: build-image
         run: |
-         pack build imtrand -b paketo-community/rust -B paketobuildpacks/builder-jammy-base:latest
-         docker image tag imtrand ghcr.io/simonerm/weddipu:next
+         pack build weddipu -b paketo-community/rust -B paketobuildpacks/builder-jammy-base:latest
+         docker image tag weddipu ghcr.io/simonerm/weddipu:next
          docker image push ghcr.io/simonerm/weddipu:next
