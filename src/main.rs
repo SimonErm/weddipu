@@ -165,7 +165,7 @@ async fn login(
     ))
 }
 async fn auth(req: Request, next: Next) -> Result<axum::response::Response, StatusCode> {
-    if req.uri().path().starts_with("/login") {
+    if req.uri().path().starts_with("/login") || req.uri().path().starts_with("/assets") {
         return Ok(next.run(req).await);
     }
     if let Some(cookie) = req.headers().typed_get::<Cookie>() {
