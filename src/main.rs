@@ -2,7 +2,10 @@ use askama::Template;
 use askama_axum::IntoResponse;
 use axum::{
     extract::{DefaultBodyLimit, Multipart, Query, Request},
-    http::{header::SET_COOKIE, HeaderMap, Response, StatusCode},
+    http::{
+        header::{CACHE_CONTROL, SET_COOKIE},
+        HeaderMap, Response, StatusCode,
+    },
     middleware::{self, Next},
     response::Redirect,
     routing::{get, post},
@@ -210,10 +213,16 @@ async fn show_login() -> LoginForm {
 async fn show_home() -> Home {
     Home {}
 }
+const ONE_WEEK_IN_SECONDS: u32 = 604800;
 async fn get_file(
     axum::extract::Path(file_name): axum::extract::Path<String>,
     Query(file_params): Query<FileParams>,
-) -> Vec<u8> {
+) -> impl IntoResponse {
+    let mut headers = HeaderMap::new();
+    headers.insert(
+        CACHE_CONTROL,
+        format!("max-age={}", ONE_WEEK_IN_SECONDS).parse().unwrap(),
+    );
     let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
     let original_filename = &format!("{}/{}", data_dir, file_name);
     let mime_guess = mime_guess::from_path(file_name);
@@ -236,20 +245,20 @@ async fn get_file(
                     .write_with_encoder(WebPEncoder::new_lossless(&mut default))
                     .unwrap(),
                 Encoding::AVIF => resized_image
-                    .write_with_encoder(AvifEncoder::new_with_speed_quality(&mut default,5,80))//should not be used for now, isvery slow
+                    .write_with_encoder(AvifEncoder::new_with_speed_quality(&mut default, 5, 80)) //should not be used for now, isvery slow
                     .unwrap(),
                 Encoding::JPEG => resized_image
                     .write_with_encoder(JpegEncoder::new_with_quality(&mut default, 85))
                     .unwrap(),
             };
 
-            return default;
+            return (headers, default);
         }
     }
     let mut buffer = vec![];
     let mut f = File::open(original_filename).unwrap();
     f.read(&mut buffer).unwrap();
-    return buffer;
+    return (headers, buffer);
 }
 #[tokio::main]
 async fn main() {
