@@ -172,7 +172,7 @@ async fn login(
     login_request: TypedMultipart<LoginRequest>,
 ) -> Result<impl IntoResponse, AppError> {
     let expected_password: String = env::var("PASSWORD").expect("$PASSWORD is not set");
-    let next_page = login_query_params.redirect.unwrap_or("/upload".to_string());
+    let next_page = login_query_params.redirect.unwrap_or("/".to_string());
     let password = login_request.password.clone();
     let mut headers = HeaderMap::new();
 
