@@ -10,6 +10,11 @@ use axum::{
 };
 use axum_extra::headers::{Cookie, HeaderMapExt};
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+use image::{
+    codecs::{avif::AvifEncoder, jpeg::JpegEncoder, webp::WebPEncoder},
+    ImageReader,
+};
+use mime_guess::mime::IMAGE;
 use serde::{Deserialize, Serialize};
 use std::{env, fs::remove_file};
 use std::{
@@ -28,6 +33,24 @@ struct LoginRequest {
 #[derive(Serialize, Deserialize)]
 struct LoginQueryParams {
     redirect: Option<String>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum Encoding {
+    WebP,
+    AVIF,
+    JPEG,
+}
+#[derive(Serialize, Deserialize)]
+struct FileParams {
+    width: Option<u32>,
+    height: Option<u32>,
+    #[serde(default = "default_resource")]
+    encoding: Encoding,
+}
+
+fn default_resource() -> Encoding {
+    Encoding::JPEG
 }
 enum AppError {
     MissingMimeType,
@@ -187,6 +210,47 @@ async fn show_login() -> LoginForm {
 async fn show_home() -> Home {
     Home {}
 }
+async fn get_file(
+    axum::extract::Path(file_name): axum::extract::Path<String>,
+    Query(file_params): Query<FileParams>,
+) -> Vec<u8> {
+    let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
+    let original_filename = &format!("{}/{}", data_dir, file_name);
+    let mime_guess = mime_guess::from_path(file_name);
+
+    if let Some(mime) = mime_guess.first() {
+        if mime.type_() == IMAGE {
+            let image = ImageReader::open(original_filename)
+                .unwrap()
+                .decode()
+                .unwrap();
+
+            let new_width = file_params.width.unwrap_or(image.width());
+            let new_height = file_params.height.unwrap_or(image.height());
+            let resized_image = image.thumbnail(new_width, new_height);
+
+            let mut default = vec![];
+
+            match file_params.encoding {
+                Encoding::WebP => resized_image
+                    .write_with_encoder(WebPEncoder::new_lossless(&mut default))
+                    .unwrap(),
+                Encoding::AVIF => resized_image
+                    .write_with_encoder(AvifEncoder::new_with_speed_quality(&mut default,5,80))//should not be used for now, isvery slow
+                    .unwrap(),
+                Encoding::JPEG => resized_image
+                    .write_with_encoder(JpegEncoder::new_with_quality(&mut default, 85))
+                    .unwrap(),
+            };
+
+            return default;
+        }
+    }
+    let mut buffer = vec![];
+    let mut f = File::open(original_filename).unwrap();
+    f.read(&mut buffer).unwrap();
+    return buffer;
+}
 #[tokio::main]
 async fn main() {
     let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
@@ -196,8 +260,8 @@ async fn main() {
     let serve_dir_from_files = ServeDir::new(&data_dir);
 
     let app = Router::new()
-        .nest_service("/assets", serve_dir_from_assets)
-        .nest_service("/files", serve_dir_from_files)
+        .nest_service("/assets", serve_dir_from_assets) // .nest_service("/files", serve_dir_from_files)
+        .route("/files/:file_name", get(get_file))
         .route("/login", get(show_login))
         .route("/login", post(login))
         .route("/gallery", get(show_gallery))

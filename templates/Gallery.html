@@ -164,7 +164,12 @@
         {% let file_name = path.split("/").last().unwrap() %}
         <li>
             <figure>
-                <img src="/files/{{ file_name }}" />
+                <picture>
+                    <!--   <source type="image/avif" srcset="/files/{{ file_name }}?encoding=avif&width=800&height=1200"/>-->
+                    <source type="image/webp" srcset="/files/{{ file_name }}?encoding=webp&width=800&height=1200" />
+                    <source type="image/jpeg" srcset="/files/{{ file_name }}?encoding=webp&width=800&height=1200" />
+                    <img src="/files/{{ file_name }}" />
+                </picture>
                 <figcaption>{{ file_name }}</figcaption>
             </figure>
         </li>

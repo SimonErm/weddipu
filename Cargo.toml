@@ -15,3 +15,5 @@ askama_axum = "0.4"
 axum_typed_multipart = "0.12.2"
 serde = { version = "1.0", features = ["derive"] }
 zip={version = "2"}
+image={version="0.25" }
+mime_guess="2"
