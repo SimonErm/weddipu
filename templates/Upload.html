@@ -85,7 +85,7 @@
             list-style-type: none;
             overflow: auto;
             scroll-snap-type: x proximity;
-
+            flex: 1;
         }
 
         li {
@@ -124,6 +124,7 @@
 
 <body>
     <script>
+        const objectUrls = [];
         const byteValueNumberFormatter = Intl.NumberFormat("en", {
             notation: "compact",
             style: "unit",
@@ -155,8 +156,9 @@
             const li = document.createElement('li');
             const figure = document.createElement('figure');
             const figureCaption = document.createElement('figcaption');
-
-            const preview = createElementByMimeAndUrl(file.type, URL.createObjectURL(file));
+            const objectUrl = URL.createObjectURL(file)
+            const preview = createElementByMimeAndUrl(file.type, objectUrl);
+            objectUrls.push(objectUrl)
             figureCaption.appendChild(document.createTextNode(`${file.name} - ${byteValueNumberFormatter.format(file.size)}`));
             figure.appendChild(preview)
             figure.appendChild(figureCaption)
@@ -173,13 +175,15 @@
             const fileInput = document.getElementById("file-input");
             fileInput.addEventListener("change", onFileSelect);
         }
+        function onUnload() {
+            objectUrls.forEach(url => URL.revokeObjectURL(url));
+        }
         window.addEventListener("load", onLoad)
     </script>
     <h1>Simon & Lysane</h1>
     <form id="file_submit" action="/upload-multi" method="POST" enctype="multipart/form-data">
         <label for="file-input" class="custom-file-upload">
-                    <input id="file-input" accept="image/*,video/*,audio/*" type="file" name="file" required="" multiple="">
-
+            <input id="file-input" accept="image/*,video/*,audio/*" type="file" name="file" required="" multiple="">
             1. Hier klicken um Bilder/Videos/Audios auszuwählen </label>
         <ul id="file-list">
         </ul>
