@@ -1,14 +1,14 @@
 use askama::Template;
 use askama_axum::IntoResponse;
 use axum::{
-    extract::{DefaultBodyLimit, Multipart, Query, Request},
+    extract::{DefaultBodyLimit, Multipart, Query, Request, State},
     http::{
         header::{CACHE_CONTROL, SET_COOKIE},
         HeaderMap, Response, StatusCode,
     },
     middleware::{self, Next},
     response::Redirect,
-    routing::{get, post},
+    routing::{get, head, post},
     Router,
 };
 use axum_extra::headers::{Cookie, HeaderMapExt};
@@ -18,8 +18,9 @@ use image::{
     ImageReader,
 };
 use mime_guess::mime::IMAGE;
+use moka::future::{Cache, CacheBuilder};
 use serde::{Deserialize, Serialize};
-use std::{env, fs::remove_file};
+use std::{env, fmt, fs::remove_file};
 use std::{
     fs::{self, File},
     io::{Read, Write},
@@ -28,7 +29,6 @@ use std::{
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 use zip::{write::SimpleFileOptions, ZipWriter};
-
 #[derive(TryFromMultipart)]
 struct LoginRequest {
     password: String,
@@ -37,12 +37,19 @@ struct LoginRequest {
 struct LoginQueryParams {
     redirect: Option<String>,
 }
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")]
 enum Encoding {
     WebP,
     AVIF,
     JPEG,
+}
+impl fmt::Display for Encoding {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+        // or, alternatively:
+        // fmt::Debug::fmt(self, f)
+    }
 }
 #[derive(Serialize, Deserialize)]
 struct FileParams {
@@ -54,6 +61,11 @@ struct FileParams {
 
 fn default_resource() -> Encoding {
     Encoding::JPEG
+}
+
+#[derive(Clone)]
+struct AppState {
+    cache: Cache<String, Vec<u8>>,
 }
 enum AppError {
     MissingMimeType,
@@ -216,6 +228,7 @@ async fn show_home() -> Home {
 }
 const ONE_WEEK_IN_SECONDS: u32 = 604800;
 async fn get_file(
+    State(state): State<AppState>,
     axum::extract::Path(file_name): axum::extract::Path<String>,
     Query(file_params): Query<FileParams>,
 ) -> impl IntoResponse {
@@ -225,9 +238,9 @@ async fn get_file(
         format!("max-age={}", ONE_WEEK_IN_SECONDS).parse().unwrap(),
     );
     let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
-    let original_filename = &format!("{}/{}", data_dir, file_name);
-    let mime_guess = mime_guess::from_path(file_name);
-
+    let original_filename = &format!("{}/{}", data_dir, &file_name);
+    let mime_guess = mime_guess::from_path(&file_name);
+    let cache = state.cache.clone();
     if let Some(mime) = mime_guess.first() {
         if mime.type_() == IMAGE {
             let image = ImageReader::open(original_filename)
@@ -237,6 +250,13 @@ async fn get_file(
 
             let new_width = file_params.width.unwrap_or(image.width());
             let new_height = file_params.height.unwrap_or(image.height());
+            let key = format!(
+                "{}-{}-{}-{}",
+                &file_name, new_width, new_height, file_params.encoding
+            );
+            if cache.contains_key(&key) {
+                return (headers, cache.get(&key).await.unwrap());
+            }
             let resized_image = image.thumbnail(new_width, new_height);
 
             let mut default = vec![];
@@ -253,6 +273,7 @@ async fn get_file(
                     .unwrap(),
             };
 
+            cache.insert(key, default.clone()).await;
             return (headers, default);
         }
     }
@@ -269,6 +290,9 @@ async fn main() {
     let serve_dir_from_assets = ServeDir::new(&asset_dir);
     let serve_dir_from_files = ServeDir::new(&data_dir);
 
+    let state = AppState {
+        cache: CacheBuilder::new(10_000).build(),
+    };
     let app = Router::new()
         .nest_service("/assets", serve_dir_from_assets) // .nest_service("/files", serve_dir_from_files)
         .route("/files/:file_name", get(get_file))
@@ -282,7 +306,8 @@ async fn main() {
             "/upload-multi",
             post(upload).layer(DefaultBodyLimit::max(500 * 1024 * 1024)),
         )
-        .layer(middleware::from_fn(auth));
+        .layer(middleware::from_fn(auth))
+        .with_state(state);
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     axum::serve(listener, app).await.unwrap();
 }
