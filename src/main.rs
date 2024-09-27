@@ -127,9 +127,10 @@ async fn upload(mut multipart: Multipart) -> Redirect {
     let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
     while let Some(field) = multipart.next_field().await.unwrap() {
         let file_name = field.file_name().unwrap().to_string();
-
+        let file_ending = file_name.split(".").last().unwrap_or("unknown");
+        let uuid = Uuid::new_v4();
         let data = field.bytes().await.unwrap();
-        let original_filename = &format!("{}/{}", data_dir, file_name);
+        let original_filename = &format!("{}/{}.{}", data_dir, uuid, file_ending);
         let path = Path::new(original_filename);
         let display = path.display();
 
