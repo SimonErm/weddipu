@@ -137,10 +137,6 @@
         }
 
         a {
-            position: fixed;
-            right: 0px;
-            bottom: 0px;
-            left: 0px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -151,9 +147,20 @@
             background-color: #e9e9ed;
             color: rgb(159, 117, 66);
             font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
-
+            flex: 1;
             text-align: center;
             text-decoration: none;
+        }
+
+        .bottom {
+            position: fixed;
+            right: 0px;
+            bottom: 0px;
+            left: 0px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
@@ -176,8 +183,10 @@
         {% endfor %}
 
     </ul>
-    <a href="/zip" download>Bilder runterladen</a>
-
+    <span class="bottom">
+        <a href="/">Zurück</a>
+        <a href="/zip" download>Bilder runterladen</a>
+    </span>
 </body>
 
 </html>

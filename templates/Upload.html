@@ -77,6 +77,7 @@
             color: rgb(159, 117, 66);
             font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
             cursor: pointer;
+            flex:1;
         }
 
         ul {
@@ -118,6 +119,34 @@
 
         figcaption {
             text-align: center;
+        }
+
+        a {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 5.4rem;
+            border: 1px solid rgb(98, 36, 15);
+            background-color: #e9e9ed;
+            color: rgb(159, 117, 66);
+            font: 1.6rem "ITC Avant Garde Gothic Pro-XLt";
+            flex: 1;
+            text-align: center;
+            text-decoration: none;
+            flex-shrink: 1;
+        }
+         .bottom {
+            gap:  1.6rem;
+            margin: 1.6rem;
+            position: fixed;
+            right: 0px;
+            bottom: 0px;
+            left: 0px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
@@ -187,7 +216,10 @@
             1. Hier klicken um Bilder/Videos/Audios auszuwählen </label>
         <ul id="file-list">
         </ul>
-        <button type="submit">2. Hochladen</button>
+        <span class="bottom">
+            <a href="/">Zurück</a>
+            <button type="submit">2. Hochladen</button>
+        </span>
     </form>
 </body>
 
