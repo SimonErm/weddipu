@@ -23,7 +23,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     env::{self},
     fmt,
-    fs::remove_file,
+    fs::remove_file, io::{Cursor, Seek},
 };
 use std::{
     fs::{self, File},
@@ -32,7 +32,7 @@ use std::{
 };
 use tower_http::services::ServeDir;
 use uuid::Uuid;
-use zip::{write::SimpleFileOptions, ZipWriter};
+use zip::{write::SimpleFileOptions, ZipArchive, ZipWriter};
 #[derive(TryFromMultipart)]
 struct LoginRequest {
     password: String,
@@ -97,13 +97,8 @@ fn zip_dir() -> Vec<u8> {
     let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
 
     let paths = fs::read_dir(&data_dir).unwrap();
-    // let mut buffer = vec![];
-    //let cursor = Cursor::new(buffer);
-    //hacky workaround because cursor was alway empty
-    let tmp_file_name = format!("tmp/{}.zip", Uuid::new_v4().to_string());
-    let path = Path::new(&tmp_file_name);
-    let file = File::create(path).unwrap();
-    let mut zip = ZipWriter::new(file);
+    let  cursor = & mut Cursor::new(vec![]);
+    let mut zip = ZipWriter::new(cursor);
     let options = SimpleFileOptions::default();
 
     let prefix = Path::new(&data_dir);
@@ -126,14 +121,11 @@ fn zip_dir() -> Vec<u8> {
             zip.add_directory(path_as_string, options).unwrap();
         }
     }
-    zip.finish().unwrap();
-    println!("{}", buffer.len());
+    let zipped=zip.finish().unwrap();
+    zipped.flush().unwrap();
+    zipped.set_position(0);
     let mut res_data = Vec::new();
-    let path = Path::new(&tmp_file_name);
-    let mut file = File::open(path).unwrap();
-    file.read_to_end(&mut res_data)
-        .expect("Unable to read data");
-    remove_file(path).unwrap();
+    zipped.read_to_end(&mut res_data).unwrap();
     return res_data;
 }
 async fn upload(mut multipart: Multipart) -> Redirect {
