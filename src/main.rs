@@ -8,7 +8,7 @@ use axum::{
     },
     middleware::{self, Next},
     response::Redirect,
-    routing::{get, head, post},
+    routing::{get, post},
     Router,
 };
 use axum_extra::headers::{Cookie, HeaderMapExt};
@@ -20,7 +20,11 @@ use image::{
 use mime_guess::mime::IMAGE;
 use moka::future::{Cache, CacheBuilder};
 use serde::{Deserialize, Serialize};
-use std::{env, fmt, fs::remove_file};
+use std::{
+    env::{self},
+    fmt,
+    fs::remove_file,
+};
 use std::{
     fs::{self, File},
     io::{Read, Write},
@@ -108,14 +112,12 @@ fn zip_dir() -> Vec<u8> {
         let path = entry.unwrap().path();
         let name = path.strip_prefix(prefix).unwrap();
         let path_as_string = name.to_str().map(str::to_owned).unwrap();
-
         // Write file or directory explicitly
         // Some unzip tools unzip files with directory paths correctly, some do not!
         if path.is_file() {
             zip.start_file(path_as_string, options).unwrap();
             let mut f = File::open(path).unwrap();
-
-            f.read(&mut buffer).unwrap();
+            f.read_to_end(&mut buffer).unwrap();
             zip.write_all(&buffer).unwrap();
             buffer.clear();
         } else if !name.as_os_str().is_empty() {
@@ -126,7 +128,6 @@ fn zip_dir() -> Vec<u8> {
     }
     zip.finish().unwrap();
     println!("{}", buffer.len());
-
     let mut res_data = Vec::new();
     let path = Path::new(&tmp_file_name);
     let mut file = File::open(path).unwrap();
