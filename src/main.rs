@@ -13,9 +13,10 @@ use axum::{
 };
 use axum_extra::headers::{Cookie, HeaderMapExt};
 use axum_typed_multipart::{TryFromMultipart, TypedMultipart};
+
 use image::{
     codecs::{avif::AvifEncoder, jpeg::JpegEncoder, webp::WebPEncoder},
-    ImageReader,
+    DynamicImage, ImageDecoder, ImageReader,
 };
 use mime_guess::mime::IMAGE;
 use moka::future::{Cache, CacheBuilder};
@@ -23,7 +24,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     env::{self},
     fmt,
-    fs::remove_file, io::{Cursor, Seek},
+    io::Cursor,
 };
 use std::{
     fs::{self, File},
@@ -32,7 +33,7 @@ use std::{
 };
 use tower_http::services::ServeDir;
 use uuid::Uuid;
-use zip::{write::SimpleFileOptions, ZipArchive, ZipWriter};
+use zip::{write::SimpleFileOptions, ZipWriter};
 #[derive(TryFromMultipart)]
 struct LoginRequest {
     password: String,
@@ -97,7 +98,7 @@ fn zip_dir() -> Vec<u8> {
     let data_dir: String = env::var("DATA_DIR").expect("$DATA_DIR is not set");
 
     let paths = fs::read_dir(&data_dir).unwrap();
-    let  cursor = & mut Cursor::new(vec![]);
+    let cursor = &mut Cursor::new(vec![]);
     let mut zip = ZipWriter::new(cursor);
     let options = SimpleFileOptions::default();
 
@@ -121,7 +122,7 @@ fn zip_dir() -> Vec<u8> {
             zip.add_directory(path_as_string, options).unwrap();
         }
     }
-    let zipped=zip.finish().unwrap();
+    let zipped = zip.finish().unwrap();
     zipped.flush().unwrap();
     zipped.set_position(0);
     let mut res_data = Vec::new();
@@ -220,6 +221,20 @@ async fn show_home() -> Home {
     Home {}
 }
 const ONE_WEEK_IN_SECONDS: u32 = 604800;
+fn load_image_with_correct_orientation(original_filename: &str) -> DynamicImage {
+    let mut image_decoder = ImageReader::open(original_filename)
+        .unwrap()
+        .into_decoder()
+        .unwrap();
+
+    let orientation = image_decoder.orientation();
+    let mut image = DynamicImage::from_decoder(image_decoder).unwrap();
+    if let Ok(extracted_orientation) = orientation {
+        image.apply_orientation(extracted_orientation);
+    }
+    image
+}
+
 async fn get_file(
     State(state): State<AppState>,
     axum::extract::Path(file_name): axum::extract::Path<String>,
@@ -236,13 +251,8 @@ async fn get_file(
     let cache = state.cache.clone();
     if let Some(mime) = mime_guess.first() {
         if mime.type_() == IMAGE {
-            let image = ImageReader::open(original_filename)
-                .unwrap()
-                .decode()
-                .unwrap();
-
-            let new_width = file_params.width.unwrap_or(image.width());
-            let new_height = file_params.height.unwrap_or(image.height());
+            let new_width = file_params.width.unwrap_or(0);
+            let new_height = file_params.height.unwrap_or(0);
             let key = format!(
                 "{}-{}-{}-{}",
                 &file_name, new_width, new_height, file_params.encoding
@@ -250,6 +260,8 @@ async fn get_file(
             if cache.contains_key(&key) {
                 return (headers, cache.get(&key).await.unwrap());
             }
+            let image = load_image_with_correct_orientation(&original_filename);
+
             let resized_image = image.thumbnail(new_width, new_height);
 
             let mut default = vec![];
